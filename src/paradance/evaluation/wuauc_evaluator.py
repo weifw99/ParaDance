@@ -19,6 +19,7 @@ def calculate_wuauc(
     weights_for_equation: List = [],
     weights_for_groups: Optional[pd.Series] = None,
     auc: bool = False,
+    pd_column='overall_score',
 ) -> float:
     """Calculate weighted user AUC.
 
@@ -31,11 +32,11 @@ def calculate_wuauc(
     """
     df = calculator.evaluated_dataframe
     if auc:
-        result = float(roc_auc_score(df[target_column].values, df["overall_score"]))
+        result = float(roc_auc_score(df[target_column].values, df[pd_column]))
     else:
         if groupby is not None:
             grouped = df.groupby(groupby).apply(
-                lambda x: float(roc_auc_score(x[target_column], x["overall_score"]))
+                lambda x: float(roc_auc_score(x[target_column], x[pd_column]))
             )
             if weights_for_groups is not None:
                 counts_sorted = weights_for_groups.loc[grouped.index]

@@ -26,14 +26,14 @@ class CSVLoader(BaseDataLoader):
         """Load data from CSV file."""
         if self.file_name is not None:
             file_url = os.path.join(str(self.file_path), self.file_name) + ".csv"
-            df = pd.read_csv(file_url, low_memory=False)
+            df = pd.read_csv(file_url, low_memory=False, sep=self.config.file_sep)
         else:
             files = os.listdir(self.file_path)
             df_list = []
             for file in files:
                 if file.endswith(str(self.file_type)):
                     file_url = os.path.join(str(self.file_path), file)
-                    df_list.append(pd.read_csv(file_url, low_memory=False))
+                    df_list.append(pd.read_csv(file_url, low_memory=False), sep=self.config.file_sep)
             df = pd.concat(df_list)
         if self.max_rows is not None:
             max_rows = min(self.max_rows, df.shape[0])

@@ -106,6 +106,7 @@ def calculate_inverse_pair(
     calculator: "Calculator",
     weights_for_equation: List[float],
     weights_type: str = "count",
+    pd_column='overall_score',
 ) -> float:
     """
     Calculates the weighted sum of inverse pairs for selected columns
@@ -116,13 +117,13 @@ def calculate_inverse_pair(
                             Supported values are "count", "linear", and "exponential".
     :return: The computed weighted sum of inverse pairs.
     """
-    calculator.get_overall_score(weights_for_equation)
+    calculator.get_overall_score(weights_for_equation, pd_column=pd_column)
 
     result = 0.0
     for i, weight in enumerate(weights_for_equation):
         score = calculate_inverse_pairs(
             calculator.selected_values[:, i],
-            calculator.df["overall_score"],
+            calculator.df[pd_column],
             weights_type,
         )
         result += score * weight

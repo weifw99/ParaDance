@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from .calculator import Calculator
 
 
-def calculate_score(x: pd.DataFrame, target_column: str, k: str) -> float:
+def calculate_score(x: pd.DataFrame, target_column: str, k: str, pd_column='overall_score',) -> float:
     """
     Helper function to calculate roc_auc_score and handle exceptions.
 
@@ -18,7 +18,7 @@ def calculate_score(x: pd.DataFrame, target_column: str, k: str) -> float:
     :return: Calculated score or 0.5 in case of exceptions.
     """
     try:
-        return float(roc_auc_score(x[f"{target_column}_lt_{k}"], x["overall_score"]))
+        return float(roc_auc_score(x[f"{target_column}_lt_{k}"], x[pd_column]))
     except:
         return 0.5
 
@@ -29,6 +29,7 @@ def calculate_woauc(
     target_column: str,
     weights_for_equation: List[float],
     weights_for_groups: Optional[pd.Series] = None,
+    pd_column='overall_score',
 ) -> List[float]:
     """
     Calculate weighted ordinal user AUC.
@@ -61,7 +62,7 @@ def calculate_woauc(
             paritial_auc = float(
                 roc_auc_score(
                     calculator.df.loc[woauc_indices][f"{target_column}_lt_{k}"],
-                    calculator.df.loc[woauc_indices]["overall_score"],
+                    calculator.df.loc[woauc_indices][pd_column],
                 )
             )
         woauc.append(paritial_auc)

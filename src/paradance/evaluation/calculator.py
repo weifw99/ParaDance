@@ -78,6 +78,7 @@ class Calculator(BaseCalculator):
     def get_overall_score(
         self,
         weights_for_equation: List[float],
+        df_column:str = 'overall_score'
     ) -> None:
         """Calculates the overall score for each row in the DataFrame based on the specified equation type and weights.
 
@@ -87,12 +88,12 @@ class Calculator(BaseCalculator):
         if self.equation_type == "product" and (
             len(weights_for_equation) == len(self.selected_columns)
         ):
-            self.df["overall_score"] = np.prod(
+            self.df[df_column] = np.prod(
                 self.selected_values**weights_for_equation, axis=1
             )
         elif self.equation_type == "sum":
             weights_array = np.array(weights_for_equation).reshape(-1, 1)
-            self.df["overall_score"] = self.selected_values @ weights_array
+            self.df[df_column] = self.selected_values @ weights_array
 
         elif self.equation_type == "free_style":
             columns = [
@@ -100,14 +101,14 @@ class Calculator(BaseCalculator):
             ]
             local_dict = self.initialize_local_dict(weights_for_equation, columns)
             if self.equation_eval_str is not None:
-                self.df["overall_score"] = eval(
-                    self.equation_eval_str, {"__builtins__": None}, local_dict
+                self.df[df_column] = eval(
+                    self.equation_eval_str, globals(), local_dict
                 )
             else:
                 raise ValueError("equation_eval_str is not defined.")
 
         elif (self.equation_type == "json") and (self.equation_json is not None):
-            self.df["overall_score"] = calculate_formula_scores(
+            self.df[df_column] = calculate_formula_scores(
                 equation_json=self.equation_json,
                 selected_values=self.df[self.selected_columns],
                 weights=weights_for_equation,
@@ -117,7 +118,7 @@ class Calculator(BaseCalculator):
         elif len(weights_for_equation) == 2 * len(self.selected_columns):
             powers_for_equation = weights_for_equation[: len(self.selected_columns)]
             first_order_weights = weights_for_equation[len(self.selected_columns) :]
-            self.df["overall_score"] = np.prod(
+            self.df[df_column] = np.prod(
                 (1 + np.asarray(first_order_weights) * np.asarray(self.selected_values))
                 ** powers_for_equation,
                 axis=1,

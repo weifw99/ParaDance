@@ -12,6 +12,7 @@ def calculate_portfolio_concentration(
     target_column: str,
     mask_column: Optional[str] = None,
     expected_return: Optional[float] = None,
+    pd_column='overall_score',
 ) -> Tuple[float, float]:
     """
     Calculate the threshold and concentration of a portfolio based on a target column and expected return.
@@ -35,11 +36,11 @@ def calculate_portfolio_concentration(
     df = calculator.evaluated_dataframe
     if expected_return is None:
         expected_return = 0.95
-    df = df.sort_values("overall_score", ascending=False)
+    df = df.sort_values(pd_column, ascending=False)
     sum_all = df[target_column].sum()
     df["cumulative_sum"] = df[target_column].cumsum()
     df["cumulative_ratio"] = df["cumulative_sum"] / sum_all
-    threshold = df[df["cumulative_ratio"] > expected_return]["overall_score"].max()
-    concentration = df[df["overall_score"] > threshold].shape[0] / len(df)
+    threshold = df[df["cumulative_ratio"] > expected_return][pd_column].max()
+    concentration = df[df[pd_column] > threshold].shape[0] / len(df)
     concentration = 1 if concentration == 0 else concentration
     return threshold, concentration

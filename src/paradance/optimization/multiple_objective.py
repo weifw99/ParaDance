@@ -189,7 +189,7 @@ class MultipleObjective(BaseObjective):
         else:
             self.evaluator_propertys.append(None)
 
-    def evaluate_custom_weights(self, weights: List[float]) -> List[float]:
+    def evaluate_custom_weights(self, weights: List[float], pd_column:str = 'overall_score') -> List[float]:
         """
         Evaluate the objective function with custom weights.
 
@@ -198,6 +198,7 @@ class MultipleObjective(BaseObjective):
         """
         self.calculator.get_overall_score(
             weights_for_equation=weights,
+            df_column=pd_column
         )
 
         targets = evaluate_targets(
@@ -209,6 +210,30 @@ class MultipleObjective(BaseObjective):
             groupbys=self.groupbys,
             target_columns=self.target_columns,
             weights=weights,
+            pd_score_columns=[pd_column for i in enumerate(range(len(self.evaluator_flags)))]
+        )
+
+        return targets
+    
+
+    def evaluate_orig_scores(self, pd_column:str = 'overall_score') -> List[float]:
+        """
+        Evaluate the objective function with orig score.
+
+        Args:
+            pd_column (str): score column
+        """
+
+        targets = evaluate_targets(
+            calculator=self.calculator,
+            evaluator_flags=self.evaluator_flags,
+            mask_columns=self.mask_columns,
+            hyperparameters=self.hyperparameters,
+            evaluator_propertys=self.evaluator_propertys,
+            groupbys=self.groupbys,
+            target_columns=self.target_columns,
+            weights=[],
+            pd_score_columns=[pd_column for i in enumerate(range(len(self.evaluator_flags)))]
         )
 
         return targets

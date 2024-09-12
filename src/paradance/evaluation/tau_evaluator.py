@@ -47,6 +47,7 @@ def calculate_tau(
     groupby: Optional[str],
     weights_for_groups: Optional[pd.Series] = None,
     num_bins: Optional[Union[int, float]] = 100,
+    pd_column='overall_score',
 ) -> float:
     """
     Calculate the Kendall's Tau using binned data.
@@ -72,7 +73,7 @@ def calculate_tau(
         calculator.df[f"{target_column}_bin"] = label_bins
         grouped = calculator.df.groupby(groupby).apply(
             lambda x: float(
-                kendalltau(x[f"{target_column}_bin"], x["overall_score"])[0]
+                kendalltau(x[f"{target_column}_bin"], x[pd_column])[0]
             )
         )
         if weights_for_groups is not None:
@@ -81,6 +82,6 @@ def calculate_tau(
         else:
             tau = float(np.mean(grouped))
     else:
-        overall_score_bins = map_to_bins(calculator.df["overall_score"], num_bins)
+        overall_score_bins = map_to_bins(calculator.df[pd_column], num_bins)
         tau, _ = kendalltau(label_bins, overall_score_bins)
     return tau

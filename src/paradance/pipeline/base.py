@@ -49,9 +49,12 @@ class BasePipeline(metaclass=ABCMeta):
             self.file_type = self.config["DataLoader"].get("file_type", "csv")
             selected_columns = self.config["Calculator"].get("selected_columns", None)
             config = self.config["DataLoader"]
-            config["clean_zero_columns"] = selected_columns
+            # config["clean_zero_columns"] = selected_columns
+            config["clean_zero_columns"] = self.config["DataLoader"].get("clean_zero_columns", None)
+            logger.info(f"_load_dataset config {config}")
             if self.dataframe is None:
                 if self.file_type == "csv":
+                    logger.info(f"_load_dataset csv config {config}")
                     self.dataframe = CSVLoader(
                         config=config,
                     ).df
@@ -59,6 +62,7 @@ class BasePipeline(metaclass=ABCMeta):
                     self.dataframe = ExcelLoader(
                         config=config,
                     ).df
+            logger.info(f"_load_dataset data size {len(self.dataframe)}")
 
     @abstractmethod
     def _load_calculator(self) -> Union[Calculator, LogarithmPCACalculator]:
@@ -115,6 +119,7 @@ class BasePipeline(metaclass=ABCMeta):
         optimize_run(
             multiple_objective=self.objective,
             n_trials=self.n_trials,
+            parallel= self.config["Objective"].get("parallel", True)
         )
 
     @abstractmethod
@@ -131,6 +136,7 @@ class BasePipeline(metaclass=ABCMeta):
         """
         logger.info("Running pipeline...")
         self._load_dataset()
+        logger.info(f"dataset size {len(self.dataframe)}")
         calculator = self._load_calculator()
         self._add_objective(calculator)
         self._add_evaluators()

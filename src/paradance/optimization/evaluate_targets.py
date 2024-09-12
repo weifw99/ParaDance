@@ -12,6 +12,7 @@ def evaluate_targets(
     evaluator_propertys: List[Optional[str]],
     groupbys: List[Optional[str]],
     weights: List[float],
+    pd_score_columns: List[str],
 ) -> List[float]:
     targets = []
     for (
@@ -21,6 +22,7 @@ def evaluate_targets(
         evaluator_property,
         groupby,
         target_column,
+        pd_score_column
     ) in zip(
         evaluator_flags,
         mask_columns,
@@ -28,11 +30,13 @@ def evaluate_targets(
         evaluator_propertys,
         groupbys,
         target_columns,
+        pd_score_columns,
     ):
         if flag == "pearson":
             corrcoef = calculator.calculate_corrcoef(
                 target_column=target_column,
                 mask_column=mask_column,
+                pd_column=pd_score_column,
             )
             targets.append(corrcoef)
 
@@ -41,6 +45,7 @@ def evaluate_targets(
                 target_column=target_column,
                 mask_column=mask_column,
                 expected_return=hyperparameter,
+                pd_column=pd_score_column,
             )
             targets.append(concentration)
 
@@ -52,6 +57,7 @@ def evaluate_targets(
                 target_column=target_column,
                 mask_column=mask_column,
                 expected_coverage=hyperparameter,
+                pd_column=pd_score_column,
             )
             targets.append(concentration)
 
@@ -60,14 +66,26 @@ def evaluate_targets(
                 target_column=target_column,
                 mask_column=mask_column,
                 head_percentage=hyperparameter,
+                pd_column=pd_score_column,
             )
             targets.append(top_coverage)
+
+        elif flag == "top_n_coverage":
+            top_n_coverage = calculator.calculate_top_n_coverage(
+                target_column=target_column,
+                mask_column=mask_column,
+                groupby=groupby,
+                top_n=hyperparameter,
+                pd_column=pd_score_column,
+            )
+            targets.append(top_n_coverage)
 
         elif flag == "distinct_top_coverage":
             distinct_top_coverage = calculator.calculate_distinct_top_coverage(
                 target_column=target_column,
                 mask_column=mask_column,
                 head_percentage=hyperparameter,
+                pd_column=pd_score_column,
             )
             targets.append(distinct_top_coverage)
 
@@ -77,6 +95,7 @@ def evaluate_targets(
                 mask_column=mask_column,
                 groupby=groupby,
                 weights_for_equation=weights,
+                pd_column=pd_score_column,
             )
             targets.append(wuauc)
 
@@ -87,6 +106,7 @@ def evaluate_targets(
                 groupby=groupby,
                 weights_for_equation=weights,
                 auc=True,
+                pd_column=pd_score_column,
             )
             targets.append(auc)
 
@@ -95,17 +115,18 @@ def evaluate_targets(
                 target_column=target_column,
                 groupby=groupby,
                 weights_for_equation=weights,
+                pd_column=pd_score_column,
             )
             targets.append(sum(woauc))
 
         elif flag == "logmse":
             mse = calculator.calculate_log_mse(
-                target_column=target_column,
+                target_column=target_column, pd_column=pd_score_column,
             )
             targets.append(mse)
         elif flag == "neg_rank_ratio":
             neg_rank_ratio = calculator.calculate_neg_rank_ratio(
-                weights_for_equation=weights, label_column=target_column
+                weights_for_equation=weights, label_column=target_column, pd_column=pd_score_column,
             )
             targets.append(neg_rank_ratio)
 
@@ -114,6 +135,7 @@ def evaluate_targets(
                 calculator=calculator,
                 weights_for_equation=weights,
                 weights_type=evaluator_property,
+                pd_column=pd_score_column,
             )
             targets.append(inverse_score)
 
@@ -122,6 +144,7 @@ def evaluate_targets(
                 groupby=groupby,
                 target_column=target_column,
                 num_bins=hyperparameter,
+                pd_column=pd_score_column,
             )
             targets.append(tau)
     return targets

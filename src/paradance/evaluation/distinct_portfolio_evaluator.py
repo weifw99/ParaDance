@@ -12,6 +12,7 @@ def calculate_distinct_count_portfolio_concentration(
     target_column: str,
     mask_column: Optional[str] = None,
     expected_coverage: Optional[float] = None,
+    pd_column='overall_score',
 ) -> Tuple[float, float]:
     """
     Calculate the threshold and concentration of a portfolio based on a specified target column and expected coverage.
@@ -37,7 +38,7 @@ def calculate_distinct_count_portfolio_concentration(
     df = calculator.evaluated_dataframe
     total_ids = df[target_column].nunique()
 
-    df_sorted = df.sort_values(by="overall_score", ascending=False).reset_index(
+    df_sorted = df.sort_values(by=pd_column, ascending=False).reset_index(
         drop=True
     )
 
@@ -46,9 +47,9 @@ def calculate_distinct_count_portfolio_concentration(
     df_filtered = df_sorted[df_sorted["cumulative_coverage"] > expected_coverage]
     if not df_filtered.empty:
         threshold_row = df_filtered.iloc[0]
-        threshold = threshold_row["overall_score"]
+        threshold = threshold_row[pd_column]
         concentration = len(
-            df_sorted[df_sorted["overall_score"] > threshold][target_column]
+            df_sorted[df_sorted[pd_column] > threshold][target_column]
         ) / len(df_sorted)
     else:
         threshold = 1

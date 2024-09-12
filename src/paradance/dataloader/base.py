@@ -16,6 +16,7 @@ class BaseDataLoaderConfig(BaseModel):
         file_path (Optional[str]): The path to the file to be loaded. Defaults to None.
         file_name (Optional[str]): The name of the file to be loaded. Defaults to None.
         file_type (Optional[str]): The type of the file to be loaded. Defaults to 'csv'.
+        file_sep (Optional[str]): The sep of the csv. Defaults to ',' you can use '\t'.
         max_rows (Optional[int]): The maximum number of rows to load from the file.
                                   Defaults to None, indicating no limit.
     """
@@ -23,6 +24,7 @@ class BaseDataLoaderConfig(BaseModel):
     file_path: Optional[str] = None
     file_name: Optional[str] = None
     file_type: Optional[str] = "csv"
+    file_sep: Optional[str] = ","
     max_rows: Optional[int] = None
     clean_zero_columns: Optional[Union[bool, List]] = None
 

@@ -17,6 +17,7 @@ from .tau_evaluator import calculate_tau
 from .top_coverage_evaluator import (
     calculate_distinct_top_coverage,
     calculate_top_coverage,
+    calculate_top_n_coverage,
 )
 from .woauc_evaluator import calculate_woauc
 from .wuauc_evaluator import calculate_wuauc
@@ -43,6 +44,7 @@ class BaseCalculator(metaclass=ABCMeta):
     calculate_portfolio_concentration = partialmethod(calculate_portfolio_concentration)
     calculate_tau = partialmethod(calculate_tau)
     calculate_top_coverage = partialmethod(calculate_top_coverage)
+    calculate_top_n_coverage = partialmethod(calculate_top_n_coverage)
     calculate_woauc = partialmethod(calculate_woauc)
     calculate_wuauc = partialmethod(calculate_wuauc)
 
@@ -92,6 +94,7 @@ class BaseCalculator(metaclass=ABCMeta):
             "weights": weights_for_equation,
             "columns": columns,
             "sum": sum,
+            "pow": pow,
             "max": self.clip_max,
             "min": self.clip_min,
         }

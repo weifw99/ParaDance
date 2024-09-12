@@ -13,6 +13,7 @@ def calculate_corrcoef(
     calculator: "Calculator",
     target_column: str,
     mask_column: Optional[str] = None,
+    pd_column='overall_score',
 ) -> float:
     """
     Calculates the Pearson correlation coefficient between the 'overall_score' column
@@ -30,6 +31,6 @@ def calculate_corrcoef(
                the target column.
     """
     df = calculator.evaluated_dataframe
-    correlation_matrix = np.corrcoef(df["overall_score"], df[target_column])
+    correlation_matrix = np.corrcoef(df[pd_column], df[target_column])
     pearson_correlation = float(correlation_matrix[0, 1])
     return pearson_correlation

@@ -27,6 +27,7 @@ class LogarithmPCACalculator(BaseCalculator):
     def get_overall_score(
         self,
         weights_for_equation: List[float],
+        df_column:str = 'overall_score'
     ) -> None:
         """
         Calculates and assigns an overall score to each entry in the dataframe based on
@@ -42,4 +43,4 @@ class LogarithmPCACalculator(BaseCalculator):
         self.pca_calculator.update(
             pca_weights=weights_for_equation,
         )
-        self.df["overall_score"] = self.pca_calculator.cumulative_product_scores
+        self.df[df_column] = self.pca_calculator.cumulative_product_scores
