@@ -39,4 +39,7 @@ class CSVLoader(BaseDataLoader):
             max_rows = min(self.max_rows, df.shape[0])
         else:
             max_rows = df.shape[0]
+
+        print( 'load_data len ', len(df))
+
         return df.iloc[:max_rows, :]

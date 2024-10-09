@@ -51,6 +51,7 @@ class BasePipeline(metaclass=ABCMeta):
             config = self.config["DataLoader"]
             # config["clean_zero_columns"] = selected_columns
             config["clean_zero_columns"] = self.config["DataLoader"].get("clean_zero_columns", None)
+            config["clean_gauc_lab_columns"] = self.config["DataLoader"].get("clean_gauc_lab_columns", None)
             logger.info(f"_load_dataset config {config}")
             if self.dataframe is None:
                 if self.file_type == "csv":

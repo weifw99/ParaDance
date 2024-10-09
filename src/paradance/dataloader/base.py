@@ -27,6 +27,7 @@ class BaseDataLoaderConfig(BaseModel):
     file_sep: Optional[str] = ","
     max_rows: Optional[int] = None
     clean_zero_columns: Optional[Union[bool, List]] = None
+    clean_gauc_lab_columns: Optional[Union[bool, dict]] = None
 
 
 class BaseDataLoader(ABC):
@@ -57,10 +58,16 @@ class BaseDataLoader(ABC):
         self.file_type = self.config.file_type
         self.max_rows = self.config.max_rows
         self.clean_zero_columns = self.config.clean_zero_columns
+        self.clean_gauc_lab_columns = self.config.clean_gauc_lab_columns
         self.df = self.load_data()
         self.column_name_spliting()
         if self.clean_zero_columns is not None:
+            print( 'clean_zero_columns ', self.clean_zero_columns)
             self.clean_columns_zero(self.clean_zero_columns)
+
+        if self.clean_gauc_lab_columns is not None:
+            print('clean_gauc_lab_columns ', self.clean_gauc_lab_columns)
+            self.clean_columns_gauc_lab(self.clean_gauc_lab_columns)
 
     @abstractmethod
     def load_data(self) -> pd.DataFrame:
@@ -93,6 +100,34 @@ class BaseDataLoader(ABC):
             self.df = self.df[(self.df[columns] > 0).all(axis=1)]
             self.df.reset_index(drop=True, inplace=True)
         self.df = self.df.fillna(0)
+
+
+    def clean_columns_gauc_lab(self, columns: Union[bool, dict] = False) -> None:
+        """Clean columns with all zeros.
+
+        :param columns: columns to clean
+        """
+        if self.df is not None and columns is not False:
+
+            for groupby, target_column in columns.items():
+
+                # 校验 分组内是否只有一个 lab ，删除只有一个lab 的数据
+                temp_pd = self.df.groupby(groupby).agg({target_column: ['count', 'sum']}).reset_index()
+                temp_pd.columns = [groupby, 'count', 'lab_count']
+                remove_pd = temp_pd[(temp_pd['lab_count'] == 0) | (temp_pd['count'] == temp_pd['lab_count'])]
+
+                print(len(temp_pd[(temp_pd['lab_count'] == 0)]))
+                print(len(temp_pd[(temp_pd['count'] == temp_pd['lab_count'])]))
+
+                print('remove data size ======' * 10, len(remove_pd))
+
+                df_temp = self.df
+                for idx, data in remove_pd.iterrows():
+                    order_id, count, lab_count = data[0], data[1], data[2]
+                    print('remove data ======' * 10, order_id, count, lab_count)
+                    df_temp = df_temp[df_temp[groupby] != order_id]
+
+                self.df = df_temp
 
     @staticmethod
     def clip_and_sum_with_group(
