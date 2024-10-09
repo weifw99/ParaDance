@@ -116,15 +116,11 @@ class BaseDataLoader(ABC):
                 temp_pd.columns = [groupby, 'count', 'lab_count']
                 remove_pd = temp_pd[(temp_pd['lab_count'] == 0) | (temp_pd['count'] == temp_pd['lab_count'])]
 
-                print(len(temp_pd[(temp_pd['lab_count'] == 0)]))
-                print(len(temp_pd[(temp_pd['count'] == temp_pd['lab_count'])]))
-
-                print('remove data size ======' * 10, len(remove_pd))
+                print(f'{"####"* 10} clean_columns_gauc_lab remove by column: {groupby}_{target_column}, data size : {len(remove_pd)} { "####"* 10}' )
 
                 df_temp = self.df
                 for idx, data in remove_pd.iterrows():
                     order_id, count, lab_count = data[0], data[1], data[2]
-                    print('remove data ======' * 10, order_id, count, lab_count)
                     df_temp = df_temp[df_temp[groupby] != order_id]
 
                 self.df = df_temp
