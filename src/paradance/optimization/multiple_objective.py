@@ -1,6 +1,8 @@
 from functools import partialmethod
 from typing import Dict, List, Optional, Union
 
+import numpy as np
+import pandas as pd
 from optuna.trial import Trial
 
 from ..evaluation import Calculator, LogarithmPCACalculator
@@ -37,8 +39,8 @@ class MultipleObjectiveConfig(BaseObjectiveConfig):
     base_weights: Optional[List[float]] = None
     base_weights_offset_ratio: float = 0.1
     max_min_scale_ratio: Optional[float] = None
-    first_order_scale_upper_bound: float = 1
-    first_order_scale_lower_bound: float = 1
+    first_order_scale_upper_bound: Union[float, List[float]] = 1
+    first_order_scale_lower_bound: Union[float, List[float]] = 1
     power_lower_bound: Union[float, List[float]] = -1
     power_upper_bound: Union[float, List[float]] = 1
     pca_importance_lower_bound: float = 0
@@ -57,6 +59,8 @@ class MultipleObjective(BaseObjective):
         calculator: Union[Calculator, LogarithmPCACalculator],
         direction: Optional[str] = None,
         formula: Optional[str] = None,
+        warmup_formula: Optional[str] = None,
+        warmup_trials: int = 200,
         first_order: Optional[bool] = False,
         power: Optional[bool] = True,
         dirichlet: Optional[bool] = False,
@@ -64,6 +68,7 @@ class MultipleObjective(BaseObjective):
         study_name: Optional[str] = None,
         study_path: Optional[str] = None,
         save_study: Optional[bool] = True,
+        checkpoint_path: Optional[str] = None,
         first_order_with_scales: bool = True,
         first_order_lower_bound: float = 1e-3,
         first_order_upper_bound: float = 1e6,
@@ -72,8 +77,8 @@ class MultipleObjective(BaseObjective):
         base_weights: Optional[List[float]] = None,
         base_weights_offset_ratio: float = 0.1,
         max_min_scale_ratio: Optional[float] = None,
-        first_order_scale_upper_bound: float = 1,
-        first_order_scale_lower_bound: float = 1,
+        first_order_scale_upper_bound: Union[float, List[float]] = 1,
+        first_order_scale_lower_bound: Union[float, List[float]] = 1,
         power_lower_bound: Union[float, List[float]] = -1,
         power_upper_bound: Union[float, List[float]] = 1,
         pca_importance_lower_bound: float = 0,
@@ -100,6 +105,8 @@ class MultipleObjective(BaseObjective):
             self.config = MultipleObjectiveConfig(
                 direction=direction,
                 formula=formula,
+                warmup_formula=warmup_formula,
+                warmup_trials=warmup_trials,
                 first_order=first_order,
                 power=power,
                 dirichlet=dirichlet,
@@ -107,6 +114,7 @@ class MultipleObjective(BaseObjective):
                 study_name=study_name,
                 study_path=study_path,
                 save_study=save_study,
+                checkpoint_path=checkpoint_path,
                 first_order_with_scales=first_order_with_scales,
                 first_order_lower_bound=first_order_lower_bound,
                 first_order_upper_bound=first_order_upper_bound,
@@ -125,6 +133,8 @@ class MultipleObjective(BaseObjective):
         self.calculator = calculator
         self.direction = self.config.direction
         self.formula = self.config.formula
+        self.warmup_formula = self.config.warmup_formula
+        self.warmup_trials = self.config.warmup_trials
         self.first_order = self.config.first_order
         self.power = self.config.power
         self.dirichlet = self.config.dirichlet
@@ -132,6 +142,7 @@ class MultipleObjective(BaseObjective):
         self.study_name = self.config.study_name
         self.study_path = self.config.study_path
         self.save_study = self.config.save_study
+        self.checkpoint_path = self.config.checkpoint_path
         self.first_order_lower_bound = self.config.first_order_lower_bound
         self.first_order_upper_bound = self.config.first_order_upper_bound
         self.first_order_with_scales = self.config.first_order_with_scales
@@ -146,12 +157,12 @@ class MultipleObjective(BaseObjective):
         self.power_upper_bound = self.config.power_upper_bound
         self.pca_importance_lower_bound = self.config.pca_importance_lower_bound
         self.pca_importance_upper_bound = self.config.pca_importance_upper_bound
-
         self.target_columns: List[str] = []
         self.mask_columns: List[Optional[str]] = []
         self.evaluator_flags: List[str] = []
         self.groupbys: List[Optional[str]] = []
-        self.hyperparameters: List[Optional[float]] = []
+        self.group_weights: List[Optional[pd.Series]] = []
+        self.hyperparameters: List[Optional[Dict]] = []
         self.evaluator_propertys: List[Optional[str]] = []
 
         if self.calculator.equation_type not in ["free_style", "json"] and isinstance(
@@ -166,9 +177,10 @@ class MultipleObjective(BaseObjective):
         flag: str,
         target_column: str,
         mask_column: Optional[str] = None,
-        hyperparameter: Optional[float] = None,
+        hyperparameter: Optional[Dict] = None,
         evaluator_property: Optional[str] = None,
         groupby: Optional[str] = None,
+        weights_for_groups: Optional[pd.Series] = None,
     ) -> None:
         """
         Adds evaluators to the objective.
@@ -189,7 +201,7 @@ class MultipleObjective(BaseObjective):
         if hyperparameter is not None:
             self.hyperparameters.append(hyperparameter)
         else:
-            self.hyperparameters.append(None)
+            self.hyperparameters.append({})
         if groupby is not None:
             self.groupbys.append(groupby)
         else:
@@ -198,6 +210,10 @@ class MultipleObjective(BaseObjective):
             self.evaluator_propertys.append(evaluator_property)
         else:
             self.evaluator_propertys.append(None)
+        if weights_for_groups is not None:
+            self.group_weights.append(weights_for_groups)
+        else:
+            self.group_weights.append(None)
 
     def evaluate_custom_weights(self, weights: List[float], pd_column:str = 'overall_score') -> List[float]:
         """
@@ -211,29 +227,28 @@ class MultipleObjective(BaseObjective):
             df_column=pd_column
         )
 
-        targets = evaluate_targets(
-            calculator=self.calculator,
-            evaluator_flags=self.evaluator_flags,
-            mask_columns=self.mask_columns,
-            hyperparameters=self.hyperparameters,
-            evaluator_propertys=self.evaluator_propertys,
-            groupbys=self.groupbys,
-            target_columns=self.target_columns,
-            weights=weights,
-            pd_score_columns=[pd_column for i in enumerate(range(len(self.evaluator_flags)))]
-        )
+        targets = self._calculate_targets()
 
         return targets
-    
 
-    def evaluate_orig_scores(self, pd_column:str = 'overall_score') -> List[float]:
+    def evaluate_given_scores(self, scores: List[float]) -> List[float]:
         """
-        Evaluate the objective function with orig score.
+        Evaluate the objective function with given scores.
 
         Args:
-            pd_column (str): score column
+            scores (List[float]): Scores to evaluate.
         """
+        self.calculator.df["overall_score"] = scores
+        self.calculator._clip_overall_score()
+        self.calculator.rerank_with_side_information()
+        targets = self._calculate_targets()
 
+        return targets
+
+    def _calculate_targets(self) -> List[float]:
+        """
+        Calculate the targets for the objective function.
+        """
         targets = evaluate_targets(
             calculator=self.calculator,
             evaluator_flags=self.evaluator_flags,
@@ -242,8 +257,7 @@ class MultipleObjective(BaseObjective):
             evaluator_propertys=self.evaluator_propertys,
             groupbys=self.groupbys,
             target_columns=self.target_columns,
-            weights=[],
-            pd_score_columns=[pd_column for i in enumerate(range(len(self.evaluator_flags)))]
+            group_weights=self.group_weights,
         )
 
         return targets
@@ -264,9 +278,61 @@ class MultipleObjective(BaseObjective):
         weights = construct_weights(self, trial)
         targets = self.evaluate_custom_weights(weights)
         local_vars = {"targets": targets, "sum": sum, "max": max, "min": min}
-        result = float(eval(str(self.formula), {"__builtins__": None}, local_vars))
+
+        if self.warmup_formula is not None and trial.number < self.warmup_trials:
+            formula = str(self.warmup_formula)
+            if (
+                self.warmup_formula is not None
+                and trial.number > self.warmup_trials // 2
+            ):
+                self.warmup_best_value = self.study.best_value
+                self.study.set_user_attr("warmup_best_value", self.warmup_best_value)
+        else:
+            formula = str(self.formula)
+
+        result = float(eval(formula, {"__builtins__": None}, local_vars))
+
+        if self.warmup_formula and trial.number >= self.warmup_trials:
+            if not hasattr(self, "warmup_best_value"):
+                self.warmup_best_value = self.study.user_attrs.get(
+                    "warmup_best_value", 0
+                )
+            if self.direction == "maximize":
+                result += self.warmup_best_value
+            elif self.direction == "minimize":
+                result -= self.warmup_best_value
+
         if self.logger:
             self.logger.info(f"Trial {trial.number} finished with result: {result}")
             self.logger.info(f"targets: {targets}")
             self.logger.info(f"weights: {weights}")
         return result
+
+    def export_completed_formulas(self, weights: Optional[np.ndarray] = None) -> None:
+        """Exports the completed formulas by replacing weight placeholders in the formulas
+        with actual values from the provided or default weights.
+
+        If `weights` is not provided, it defaults to `self.best_params`. The method updates
+        `self.completed_formulas` by replacing occurrences of `weights[i]` in the stored
+        equations with corresponding values from the weight array.
+
+        Args:
+            weights (Optional[np.ndarray]): An optional numpy array containing weight values
+                to substitute in the formulas. If None, `self.best_params` is used.
+
+        Returns:
+            None: This method does not return a value but updates `self.completed_formulas`
+            with the substituted equations.
+        """
+        json_equations = {}
+        if weights is None:
+            weights = self.best_params
+        if isinstance(self.calculator, Calculator) and hasattr(
+            self.calculator, "equation_json"
+        ):
+            json_equations = self.calculator.equation_json.formula
+            for key, expr in json_equations.items():
+                for i, param in enumerate(weights):
+                    expr = expr.replace(f"weights[{i}]", str(param))
+                json_equations[key] = expr
+        self.completed_formulas = json_equations

@@ -1,4 +1,5 @@
 import logging
+import os
 from abc import ABCMeta, abstractmethod
 from typing import Dict, List, Optional, Union
 
@@ -18,6 +19,8 @@ class BaseObjectiveConfig(BaseModel):
         direction (Optional[str]): Specifies the optimization direction. This can be either 'minimize' or 'maximize'.
                                    Default is None, which should be overridden in subclass or instance.
         formula (Optional[str]): The mathematical formula or expression used in the objective function. Default is None.
+        warmup_formula (Optional[str]): The mathematical formula or expression used in the warmup function. Default is None.
+        warmup_trials (int): The number of warmup trials to run. Default is 200.
         first_order (Optional[bool]): Indicates whether to use first-order optimization. Defaults to False.
         power (Optional[bool]): Indicates whether to apply a power transform in the objective. Defaults to True.
         dirichlet (Optional[bool]): Specifies if a Dirichlet process should be used. Defaults to False.
@@ -25,10 +28,13 @@ class BaseObjectiveConfig(BaseModel):
         study_name (Optional[str]): The name of the optimization study. Default is None.
         study_path (Optional[str]): Filesystem path where study results are stored. Default is None.
         save_study (Optional[bool]): Flag indicating whether to persist the study to disk. Defaults to True.
+        checkpoint_path (Optional[str]): Path to the entry point for the optimization process. Default is None.
     """
 
     direction: Optional[str] = None
     formula: Optional[str] = None
+    warmup_formula: Optional[str] = None
+    warmup_trials: int = 200
     first_order: Optional[bool] = False
     power: Optional[bool] = True
     dirichlet: Optional[bool] = False
@@ -36,6 +42,7 @@ class BaseObjectiveConfig(BaseModel):
     study_name: Optional[str] = None
     study_path: Optional[str] = None
     save_study: Optional[bool] = True
+    checkpoint_path: Optional[str] = None
 
 
 class BaseObjective(metaclass=ABCMeta):
@@ -72,6 +79,8 @@ class BaseObjective(metaclass=ABCMeta):
         calculator: Union[Calculator, LogarithmPCACalculator],
         direction: Optional[str] = None,
         formula: Optional[str] = None,
+        warmup_formula: Optional[str] = None,
+        warmup_trials: int = 200,
         first_order: Optional[bool] = False,
         power: Optional[bool] = True,
         dirichlet: Optional[bool] = False,
@@ -79,6 +88,7 @@ class BaseObjective(metaclass=ABCMeta):
         study_name: Optional[str] = None,
         study_path: Optional[str] = None,
         save_study: Optional[bool] = True,
+        checkpoint_path: Optional[str] = None,
         config: Optional[Dict] = None,
     ) -> None:
         """
@@ -102,6 +112,8 @@ class BaseObjective(metaclass=ABCMeta):
             self.config = BaseObjectiveConfig(
                 direction=direction,
                 formula=formula,
+                warmup_formula=warmup_formula,
+                warmup_trials=warmup_trials,
                 first_order=first_order,
                 power=power,
                 dirichlet=dirichlet,
@@ -109,10 +121,13 @@ class BaseObjective(metaclass=ABCMeta):
                 study_name=study_name,
                 study_path=study_path,
                 save_study=save_study,
+                checkpoint_path=checkpoint_path,
             )
 
         self.direction = self.config.direction
         self.formula = self.config.formula
+        self.warmup_formula = self.config.warmup_formula
+        self.warmup_trials = self.config.warmup_trials
         self.first_order = self.config.first_order
         self.power = self.config.power
         self.dirichlet = self.config.dirichlet
@@ -120,6 +135,7 @@ class BaseObjective(metaclass=ABCMeta):
         self.study_name = self.config.study_name
         self.study_path = self.config.study_path
         self.save_study = self.config.save_study
+        self.checkpoint_path = self.config.checkpoint_path
         self._prepare_study()
 
     def _prepare_study(self) -> None:
@@ -139,10 +155,17 @@ class BaseObjective(metaclass=ABCMeta):
             - Initializes `self.best_params` as a NumPy zero array of size `self.weights_num`.
         """
         self.full_path = ensure_study_directory(self.study_path, self.study_name)
+
+        if self.checkpoint_path is not None:
+            storage_path = os.path.join(os.getcwd(), self.checkpoint_path)
+        else:
+            storage_path = self.full_path
+
         storage = optuna.storages.RDBStorage(
-            url=f"sqlite:///{self.full_path}/paradance_storage.db",
-            engine_kwargs={"connect_args": {"timeout": 60}},
+            url=f"sqlite:///{storage_path}/paradance_storage.db",
+            engine_kwargs={"connect_args": {"timeout": 120}},
         )
+
         self.study = optuna.create_study(
             direction=self.direction,
             study_name=self.study_name,

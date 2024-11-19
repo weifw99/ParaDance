@@ -12,7 +12,9 @@ class Calculator(BaseCalculator):
 
     Attributes:
         df (pd.DataFrame): The DataFrame to perform calculations on.
-        df_len (int): The length of the DataFrame.
+        selected_columns (List[str]): The names of the columns to include in calculations.
+        overall_score_lower_bound (Optional[float]): The lower bound for overall scores.
+        overall_score_upper_bound (Optional[float]): The upper bound for overall scores.
         equation_eval_str (Optional[str]): A string representing a custom equation to evaluate.
         equation_type (str): The type of equation to use for calculations ("product", "sum", "free_style", or "json").
         selected_columns (List[str]): Columns selected for calculations.
@@ -25,11 +27,14 @@ class Calculator(BaseCalculator):
         self,
         df: pd.DataFrame,
         selected_columns: List[str],
+        overall_score_lower_bound: Optional[float] = None,
+        overall_score_upper_bound: Optional[float] = None,
         equation_type: str = "product",
         weights_for_groups: Optional[pd.Series] = None,
         equation_eval_str: Optional[str] = None,
         equation_json: Optional[Dict] = None,
         delimiter: Optional[str] = "#",
+        rerank_eval_str: Optional[str] = None,
     ) -> None:
         """Initializes the Calculator object.
 
@@ -39,20 +44,25 @@ class Calculator(BaseCalculator):
             equation_type (str, optional): The type of equation to use for score calculation. Defaults to "product".
             weights_for_groups (Optional[pd.Series], optional): A Series containing weights for different groups. Defaults to None, which sets equal weights.
             equation_eval_str (Optional[str], optional): A string representing a custom equation for free-style calculations. Defaults to None.
+            rerank_eval_str (Optional[str], optional): A string representing a custom equation for reranking. Defaults to None.
         """
         super().__init__(
+            df=df,
             selected_columns=selected_columns,
+            overall_score_lower_bound=overall_score_lower_bound,
+            overall_score_upper_bound=overall_score_upper_bound,
+            rerank_eval_str=rerank_eval_str,
         )
         self.df = df
         self.df_len = len(self.df)
         self.equation_eval_str = equation_eval_str
+        self.rerank_eval_str = rerank_eval_str
 
         if equation_json is not None:
             self.equation_json = JSONFormula(**equation_json)
 
         self.delimiter = delimiter
         self.equation_type = equation_type
-        self.selected_columns = selected_columns
         self.selected_values = self.df[selected_columns].values
 
         if weights_for_groups is None:
@@ -123,6 +133,9 @@ class Calculator(BaseCalculator):
                 ** powers_for_equation,
                 axis=1,
             )
+
+        self._clip_overall_score()
+        self.rerank_with_side_information()
 
     def create_score_columns(
         self, boundary_dict: dict, score_column: str = "score"
