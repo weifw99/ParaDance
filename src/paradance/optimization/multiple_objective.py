@@ -227,7 +227,7 @@ class MultipleObjective(BaseObjective):
             df_column=pd_column
         )
 
-        targets = self._calculate_targets()
+        targets = self._calculate_targets(pd_column=pd_column)
 
         return targets
 
@@ -280,7 +280,7 @@ class MultipleObjective(BaseObjective):
 
         return targets
 
-    def _calculate_targets(self) -> List[float]:
+    def _calculate_targets(self, pd_column:str = 'overall_score') -> List[float]:
         """
         Calculate the targets for the objective function.
         """
@@ -293,6 +293,7 @@ class MultipleObjective(BaseObjective):
             groupbys=self.groupbys,
             target_columns=self.target_columns,
             group_weights=self.group_weights,
+            pd_score_column=pd_column
         )
 
         return targets

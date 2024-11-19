@@ -11,6 +11,7 @@ def calculate_log_mse(
     target_column: str,
     laplace_smoothing: float = 1.0,
     use_rerank: bool = True,
+    pd_column='overall_score',
 ) -> float:
     """Calculate log mean squared error.
 
@@ -20,10 +21,10 @@ def calculate_log_mse(
     """
     log_true = np.log(calculator.df[target_column] + laplace_smoothing)
     if use_rerank:
-        log_pred = np.log(calculator.df["overall_score"] + laplace_smoothing)
+        log_pred = np.log(calculator.df[pd_column] + laplace_smoothing)
     else:
         log_pred = np.log(
-            calculator.df["overall_score_before_rerank"] + laplace_smoothing
+            calculator.df[f"{pd_column}_before_rerank"] + laplace_smoothing
         )
     mse = np.mean((log_true - log_pred) ** 2)
     return float(mse)

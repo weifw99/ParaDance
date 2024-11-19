@@ -126,12 +126,12 @@ class BaseCalculator(metaclass=ABCMeta):
                 upper=self.overall_score_upper_bound,
             )
 
-    def rerank_with_side_information(self) -> None:
+    def rerank_with_side_information(self, df_column:str = 'overall_score') -> None:
         """Reranks the rows in the DataFrame based on side information.
 
         Args:
             rerank_eval_str (str): A string representing a custom equation for reranking.
         """
         if self.rerank_eval_str is not None:
-            self.df["overall_score_before_rerank"] = self.df["overall_score"].copy()
-            self.df["overall_score"] = self.df.eval(self.rerank_eval_str)
+            self.df[f"{df_column}_before_rerank"] = self.df[df_column].copy()
+            self.df[df_column] = self.df.eval(self.rerank_eval_str)

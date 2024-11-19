@@ -15,6 +15,7 @@ def calculate_cumulative_deviation(
     use_rerank: bool = True,
     mask_column: Optional[str] = None,
     n_quantiles: Optional[int] = 10,
+    pd_column='overall_score',
 ) -> float:
     """
     Calculate the cumulative quantile deviation between the sorted values of a target column
@@ -36,9 +37,9 @@ def calculate_cumulative_deviation(
     df = calculator.evaluated_dataframe
     sorted_col1 = np.sort(df[target_column])[::-1]
     if use_rerank:
-        sorted_col2 = np.sort(df["overall_score"])[::-1]
+        sorted_col2 = np.sort(df[pd_column])[::-1]
     else:
-        sorted_col2 = np.sort(df["overall_score_before_rerank"])[::-1]
+        sorted_col2 = np.sort(df[f"{pd_column}_before_rerank"])[::-1]
 
     quantiles = np.linspace(1 / n_quantiles, 1, n_quantiles)
     indices = np.floor(quantiles * len(sorted_col1)).astype(int)

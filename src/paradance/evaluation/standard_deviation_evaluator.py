@@ -17,6 +17,7 @@ def calculate_standard_deviation(
     log_scale: bool = True,
     laplace_smoothing: float = 1.0,
     use_rerank: bool = True,
+    pd_column='overall_score',
 ) -> float:
     """Calculate the adjusted std of a specified target column, with optional log-scaling and smoothing.
 
@@ -33,9 +34,9 @@ def calculate_standard_deviation(
         float: The absolute deviation of the calculated std from `target_std`.
     """
     if use_rerank:
-        scores = calculator.df["overall_score"]
+        scores = calculator.df[pd_column]
     else:
-        scores = calculator.df["overall_score_before_rerank"]
+        scores = calculator.df[f"{pd_column}_before_rerank"]
 
     if log_scale:
         std_value = np.log(scores + laplace_smoothing).std()

@@ -136,7 +136,7 @@ class Calculator(BaseCalculator):
             )
 
         self._clip_overall_score()
-        self.rerank_with_side_information()
+        self.rerank_with_side_information(df_column=df_column)
 
     def create_score_columns(
         self, boundary_dict: dict, score_column: str = "score"

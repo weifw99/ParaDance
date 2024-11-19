@@ -13,12 +13,13 @@ def calculate_proportion(
     mask_column: Optional[str] = None,
     target_value: float = 0.0,
     use_rerank: bool = True,
+    pd_column='overall_score',
 ) -> float:
     if use_rerank:
-        proportion = (calculator.df["overall_score"] == target_value).mean()
+        proportion = (calculator.df[pd_column] == target_value).mean()
     else:
         proportion = (
-            calculator.df["overall_score_before_rerank"] == target_value
+            calculator.df[f"{pd_column}_before_rerank"] == target_value
         ).mean()
 
     return float(proportion)

@@ -106,6 +106,7 @@ def calculate_inverse_pair(
     calculator: "Calculator",
     target_column: str,
     weights_type: str = "count",
+    pd_column='overall_score',
 ) -> float:
     """
     Calculates the weighted sum of inverse pairs for selected columns
@@ -120,7 +121,7 @@ def calculate_inverse_pair(
 
     score = calculate_inverse_pairs(
         calculator.df[target_column],
-        calculator.df["overall_score"],
+        calculator.df[pd_column],
         weights_type,
     )
     return score
