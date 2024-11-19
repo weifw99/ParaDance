@@ -238,7 +238,6 @@ class MultipleObjective(BaseObjective):
         Args:
             pd_column (str): score column
         """
-
         targets = evaluate_targets(
             calculator=self.calculator,
             evaluator_flags=self.evaluator_flags,
@@ -247,6 +246,7 @@ class MultipleObjective(BaseObjective):
             evaluator_propertys=self.evaluator_propertys,
             groupbys=self.groupbys,
             target_columns=self.target_columns,
+            group_weights=self.group_weights,
             pd_score_column=pd_column
         )
 
@@ -262,6 +262,20 @@ class MultipleObjective(BaseObjective):
         self.calculator.df["overall_score"] = scores
         self.calculator._clip_overall_score()
         self.calculator.rerank_with_side_information()
+        targets = self._calculate_targets()
+
+        return targets
+
+    def evaluate_given_scores1(self, scores: List[float], pd_column: str = 'overall_score') -> List[float]:
+        """
+        Evaluate the objective function with given scores.
+
+        Args:
+            scores (List[float]): Scores to evaluate.
+        """
+        self.calculator.df["overall_score"] = scores
+        self.calculator._clip_overall_score()
+        self.calculator.rerank_with_side_information(df_column=pd_column)
         targets = self._calculate_targets()
 
         return targets

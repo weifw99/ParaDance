@@ -47,6 +47,7 @@ def evaluate_targets(
                 target_column=target_column,
                 mask_column=mask_column,
                 expected_return=hyperparameter.get("expected_return", None),
+                pd_column=pd_score_column,
             )
             targets.append(concentration)
 
@@ -56,6 +57,7 @@ def evaluate_targets(
                 mask_column=mask_column,
                 target_value=hyperparameter.get("target_value", 0.0),
                 use_rerank=hyperparameter.get("use_rerank", True),
+                pd_column=pd_score_column,
             )
             targets.append(proportion)
 
@@ -65,6 +67,7 @@ def evaluate_targets(
                 mask_column=mask_column,
                 use_rerank=hyperparameter.get("use_rerank", False),
                 n_quantiles=hyperparameter.get("n_quantiles", None),
+                pd_column=pd_score_column,
             )
             targets.append(cumulative_deviation)
 
@@ -76,6 +79,7 @@ def evaluate_targets(
                 target_column=target_column,
                 mask_column=mask_column,
                 expected_coverage=hyperparameter.get("expected_coverage", None),
+                pd_column=pd_score_column,
             )
             targets.append(concentration)
 
@@ -84,6 +88,7 @@ def evaluate_targets(
                 target_column=target_column,
                 mask_column=mask_column,
                 head_percentage=hyperparameter.get("head_percentage", None),
+                pd_column=pd_score_column,
             )
             targets.append(top_coverage)
 
@@ -99,7 +104,6 @@ def evaluate_targets(
 
         elif flag == "ndcg_top_n":
             top_n_coverage = calculator.calculate_ndcg(
-                weights_for_equation=weights,
                 groupby=groupby,
                 top_n=hyperparameter,
                 label_column=target_column,
@@ -112,6 +116,7 @@ def evaluate_targets(
                 target_column=target_column,
                 mask_column=mask_column,
                 head_percentage=hyperparameter.get("head_percentage", None),
+                pd_column=pd_score_column,
             )
             targets.append(distinct_top_coverage)
 
@@ -121,6 +126,7 @@ def evaluate_targets(
                 mask_column=mask_column,
                 groupby=groupby,
                 weights_for_groups=weights_for_groups,
+                pd_column=pd_score_column,
             )
             targets.append(wuauc)
 
@@ -140,6 +146,7 @@ def evaluate_targets(
                 target_column=target_column,
                 groupby=groupby,
                 weights_for_groups=weights_for_groups,
+                pd_column=pd_score_column,
             )
             targets.append(sum(woauc))
 
@@ -148,6 +155,7 @@ def evaluate_targets(
                 target_column=target_column,
                 laplace_smoothing=hyperparameter.get("laplace_smoothing", 1.0),
                 use_rerank=hyperparameter.get("use_rerank", True),
+                pd_column=pd_score_column,
             )
             targets.append(mse)
 
@@ -159,6 +167,7 @@ def evaluate_targets(
                 log_scale=hyperparameter.get("log_scale", True),
                 laplace_smoothing=hyperparameter.get("laplace_smoothing", 1.0),
                 use_rerank=hyperparameter.get("use_rerank", True),
+                pd_column=pd_score_column,
             )
             targets.append(mean)
 
@@ -170,6 +179,7 @@ def evaluate_targets(
                 log_scale=hyperparameter.get("log_scale", True),
                 laplace_smoothing=hyperparameter.get("laplace_smoothing", 1.0),
                 use_rerank=hyperparameter.get("use_rerank", True),
+                pd_column=pd_score_column,
             )
             targets.append(std)
 
@@ -194,6 +204,7 @@ def evaluate_targets(
                 target_column=target_column,
                 weights_for_groups=weights_for_groups,
                 num_bins=hyperparameter.get("num_bins", 10),
+                pd_column=pd_score_column,
             )
             targets.append(tau)
     return targets
