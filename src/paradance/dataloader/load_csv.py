@@ -40,6 +40,6 @@ class CSVLoader(BaseDataLoader):
         else:
             max_rows = df.shape[0]
 
-        print( 'load_data len ', len(df))
+        print( f'{"##"*20}load_data len {len(df)}, {"##"*20}' )
 
         return df.iloc[:max_rows, :]

@@ -5,7 +5,9 @@ if TYPE_CHECKING:
 
 
 def calculate_neg_rank_ratio(
-    calculator: "Calculator", label_column: str = "label"
+    calculator: "Calculator",
+    label_column: str = "label",
+    pd_column='overall_score',
 ) -> float:
     """Calculate the rank ratio of negative target
     :param label_column: target column, its values must be 0 or 1

@@ -128,12 +128,10 @@ def calculate_top_n_coverage(
         top_n = 100
 
     df = calculator.evaluated_dataframe
-    total_sum = df[target_column].sum()
-    # print( '***'*10 + 'calculate_top_n_coverage total_sum', total_sum)
+    # total_sum = df[target_column].sum()
     group_top_df = pd_data_group_top_n(data=df, group_cols=[groupby], val_cols=[pd_column], ascending=False, k=top_n)
-    # print( '***'*10 + 'calculate_top_n_coverage group_top_df', len(group_top_df))
     top_sum = group_top_df[target_column].sum()
-    # print( '***'*10 + 'calculate_top_n_coverage top_sum', top_sum)
-    top_coverage_ratio = top_sum / total_sum
+    # top_coverage_ratio = top_sum / total_sum
+    top_coverage_ratio = top_sum / group_top_df[target_column].count()
 
     return float(top_coverage_ratio)

@@ -231,6 +231,27 @@ class MultipleObjective(BaseObjective):
 
         return targets
 
+    def evaluate_orig_scores(self, pd_column: str = 'overall_score') -> List[float]:
+        """
+        Evaluate the objective function with orig score.
+
+        Args:
+            pd_column (str): score column
+        """
+
+        targets = evaluate_targets(
+            calculator=self.calculator,
+            evaluator_flags=self.evaluator_flags,
+            mask_columns=self.mask_columns,
+            hyperparameters=self.hyperparameters,
+            evaluator_propertys=self.evaluator_propertys,
+            groupbys=self.groupbys,
+            target_columns=self.target_columns,
+            pd_score_column=pd_column
+        )
+
+        return targets
+
     def evaluate_given_scores(self, scores: List[float]) -> List[float]:
         """
         Evaluate the objective function with given scores.

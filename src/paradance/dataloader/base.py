@@ -103,9 +103,9 @@ class BaseDataLoader(ABC):
 
 
     def clean_columns_gauc_lab(self, columns: Union[bool, dict] = False) -> None:
-        """Clean columns with all zeros.
+        """gauc lab columns.
 
-        :param columns: columns to clean
+        :param columns: dict ,key: groupby ,value: target_column
         """
         if self.df is not None and columns is not False:
 
@@ -121,6 +121,7 @@ class BaseDataLoader(ABC):
                 df_temp = self.df
                 for idx, data in remove_pd.iterrows():
                     order_id, count, lab_count = data[0], data[1], data[2]
+                    print( f'{"####" * 10}  remove {target_column} column, id:{order_id}, count:{count}, lab_count:{lab_count} ,  {"####" * 10}')
                     df_temp = df_temp[df_temp[groupby] != order_id]
 
                 self.df = df_temp

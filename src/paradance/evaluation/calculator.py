@@ -63,6 +63,7 @@ class Calculator(BaseCalculator):
 
         self.delimiter = delimiter
         self.equation_type = equation_type
+        self.selected_columns = selected_columns
         self.selected_values = self.df[selected_columns].values
 
         if weights_for_groups is None:

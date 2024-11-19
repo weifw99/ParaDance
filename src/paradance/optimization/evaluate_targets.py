@@ -14,6 +14,7 @@ def evaluate_targets(
     evaluator_propertys: List[Optional[str]],
     groupbys: List[Optional[str]],
     group_weights: List[Optional[pd.Series]],
+    pd_score_column: str = 'overall_score',
 ) -> List[float]:
     targets = []
     for (
@@ -96,6 +97,16 @@ def evaluate_targets(
             )
             targets.append(top_n_coverage)
 
+        elif flag == "ndcg_top_n":
+            top_n_coverage = calculator.calculate_ndcg(
+                weights_for_equation=weights,
+                groupby=groupby,
+                top_n=hyperparameter,
+                label_column=target_column,
+                pd_column=pd_score_column,
+            )
+            targets.append(top_n_coverage)
+
         elif flag == "distinct_top_coverage":
             distinct_top_coverage = calculator.calculate_distinct_top_coverage(
                 target_column=target_column,
@@ -164,7 +175,8 @@ def evaluate_targets(
 
         elif flag == "neg_rank_ratio":
             neg_rank_ratio = calculator.calculate_neg_rank_ratio(
-                label_column=target_column
+                label_column=target_column,
+                pd_column=pd_score_column,
             )
             targets.append(neg_rank_ratio)
 
