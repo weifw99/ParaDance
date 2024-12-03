@@ -67,7 +67,7 @@ class ClassicalPipeline(BasePipeline):
         Logs information about the selected columns, first order weights, and
         power weights based on the calculations performed.
         """
-        best_params = list(self.objective.study.best_params.values())
+        best_params = self.objective.study.best_trials[len(self.objective.study.best_trials) - 1].values
         if not (self.objective.first_order):
             first_order_weights = None
             power_weights = best_params

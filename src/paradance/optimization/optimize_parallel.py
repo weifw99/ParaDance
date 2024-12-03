@@ -152,7 +152,8 @@ def optimize_run(
         Parallel(n_jobs=n_cores)(
             delayed(parallel_optimize)(ob, i, unit_n_trials) for i in range(n_cores)
         )
-    ob.best_params = np.asarray(list(ob.study.best_params.values()))
+
+    ob.best_params = np.asarray( ob.study.best_trials[len(ob.study.best_trials) - 1].values )
     save_study(ob)
     if not ob.save_study:
         subprocess.run(["rm", "-rf", ob.full_path])
