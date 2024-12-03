@@ -31,9 +31,9 @@ class BaseObjectiveConfig(BaseModel):
         checkpoint_path (Optional[str]): Path to the entry point for the optimization process. Default is None.
     """
 
-    direction: Optional[str] = None
-    formula: Optional[str] = None
-    warmup_formula: Optional[str] = None
+    direction: Optional[list[str]] = None
+    formula: Optional[list[str]] = None
+    warmup_formula: Optional[list[str]] = None
     warmup_trials: int = 200
     first_order: Optional[bool] = False
     power: Optional[bool] = True
@@ -166,8 +166,14 @@ class BaseObjective(metaclass=ABCMeta):
             engine_kwargs={"connect_args": {"timeout": 120}},
         )
 
+        # self.study = optuna.create_study(
+        #     direction=self.direction,
+        #     study_name=self.study_name,
+        #     storage=storage,
+        #     load_if_exists=True,
+        # )
         self.study = optuna.create_study(
-            direction=self.direction,
+            directions=self.direction,
             study_name=self.study_name,
             storage=storage,
             load_if_exists=True,
@@ -211,7 +217,7 @@ class BaseObjective(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def objective(self, trial: optuna.trial.Trial) -> float:
+    def objective(self, trial: optuna.trial.Trial) -> list[float]:
         """
         Abstract method for the objective function. Must be overridden in derived classes.
 

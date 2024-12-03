@@ -47,7 +47,7 @@ def get_best_trials(multiple_objective: MultipleObjective) -> None:
                         lines[sub_idx].split("weights:")[1].strip().strip("[]")
                     )
 
-                    results = float(results_line.split("result:")[1].strip())
+                    results = results_line.split("result:")[1].strip()
                     targets_str = [
                         val.strip() for val in targets_line.split(",") if val.strip()
                     ]

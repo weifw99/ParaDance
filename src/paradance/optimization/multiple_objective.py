@@ -301,7 +301,7 @@ class MultipleObjective(BaseObjective):
     def objective(
         self,
         trial: Trial,
-    ) -> float:
+    ) -> list[float]:
         """
         Objective function to be optimized by optuna.
 
@@ -315,34 +315,38 @@ class MultipleObjective(BaseObjective):
         targets = self.evaluate_custom_weights(weights)
         local_vars = {"targets": targets, "sum": sum, "max": max, "min": min}
 
-        if self.warmup_formula is not None and trial.number < self.warmup_trials:
-            formula = str(self.warmup_formula)
+        if self.warmup_formula is not None and len(self.warmup_formula)>0 and trial.number < self.warmup_trials:
+            formulas = self.warmup_formula
             if (
                 self.warmup_formula is not None
                 and trial.number > self.warmup_trials // 2
             ):
-                self.warmup_best_value = self.study.best_value
+                self.warmup_best_value = self.study.best_trials[len(self.study.best_trials) - 1].values
                 self.study.set_user_attr("warmup_best_value", self.warmup_best_value)
         else:
-            formula = str(self.formula)
+            formulas = self.formula
 
-        result = float(eval(formula, {"__builtins__": None}, local_vars))
+        results = []
+        for i, formula in enumerate(formulas):
+            result = float(eval(formula, {"__builtins__": None}, local_vars))
 
-        if self.warmup_formula and trial.number >= self.warmup_trials:
-            if not hasattr(self, "warmup_best_value"):
-                self.warmup_best_value = self.study.user_attrs.get(
-                    "warmup_best_value", 0
-                )
-            if self.direction == "maximize":
-                result += self.warmup_best_value
-            elif self.direction == "minimize":
-                result -= self.warmup_best_value
+            if self.warmup_formula and trial.number >= self.warmup_trials:
+                if not hasattr(self, "warmup_best_value"):
+                    self.warmup_best_value = self.study.user_attrs.get(
+                        "warmup_best_value", [0]*len(formulas)
+                    )
+                if self.direction[i] == "maximize":
+                    result += self.warmup_best_value[i]
+                elif self.direction[i] == "minimize":
+                    result -= self.warmup_best_value[i]
+
+            results.append(result)
 
         if self.logger:
-            self.logger.info(f"Trial {trial.number} finished with result: {result}")
+            self.logger.info(f"Trial {trial.number} finished with result: {results}")
             self.logger.info(f"targets: {targets}")
             self.logger.info(f"weights: {weights}")
-        return result
+        return results
 
     def export_completed_formulas(self, weights: Optional[np.ndarray] = None) -> None:
         """Exports the completed formulas by replacing weight placeholders in the formulas
