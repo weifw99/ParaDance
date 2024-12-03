@@ -109,22 +109,23 @@ class BaseDataLoader(ABC):
         """
         if self.df is not None and columns is not False:
 
-            for groupby, target_column in columns.items():
+            for groupby, target_columns in columns.items():
+                for target_column in target_columns:
 
-                # 校验 分组内是否只有一个 lab ，删除只有一个lab 的数据
-                temp_pd = self.df.groupby(groupby).agg({target_column: ['count', 'sum']}).reset_index()
-                temp_pd.columns = [groupby, 'count', 'lab_count']
-                remove_pd = temp_pd[(temp_pd['lab_count'] == 0) | (temp_pd['count'] == temp_pd['lab_count'])]
+                    # 校验 分组内是否只有一个 lab ，删除只有一个lab 的数据
+                    temp_pd = self.df.groupby(groupby).agg({target_column: ['count', 'sum']}).reset_index()
+                    temp_pd.columns = [groupby, 'count', 'lab_count']
+                    remove_pd = temp_pd[(temp_pd['lab_count'] == 0) | (temp_pd['count'] == temp_pd['lab_count'])]
 
-                print(f'{"####"* 10} clean_columns_gauc_lab remove by column: {groupby}_{target_column}, data size : {len(remove_pd)} { "####"* 10}' )
+                    print(f'{"####"* 10} clean_columns_gauc_lab remove by column: {groupby}_{target_column}, data size : {len(remove_pd)} { "####"* 10}' )
 
-                df_temp = self.df
-                for idx, data in remove_pd.iterrows():
-                    order_id, count, lab_count = data[0], data[1], data[2]
-                    print( f'{"####" * 10}  remove {target_column} column, id:{order_id}, count:{count}, lab_count:{lab_count} ,  {"####" * 10}')
-                    df_temp = df_temp[df_temp[groupby] != order_id]
+                    df_temp = self.df
+                    for idx, data in remove_pd.iterrows():
+                        order_id, count, lab_count = data[0], data[1], data[2]
+                        print( f'{"####" * 10}  remove {target_column} column, id:{order_id}, count:{count}, lab_count:{lab_count} ,  {"####" * 10}')
+                        df_temp = df_temp[df_temp[groupby] != order_id]
 
-                self.df = df_temp
+                    self.df = df_temp
 
     @staticmethod
     def clip_and_sum_with_group(

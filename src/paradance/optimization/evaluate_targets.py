@@ -97,7 +97,7 @@ def evaluate_targets(
                 target_column=target_column,
                 mask_column=mask_column,
                 groupby=groupby,
-                top_n=hyperparameter,
+                top_n=hyperparameter.get("top_n", None),
                 pd_column=pd_score_column,
             )
             targets.append(top_n_coverage)
@@ -105,7 +105,7 @@ def evaluate_targets(
         elif flag == "ndcg_top_n":
             top_n_coverage = calculator.calculate_ndcg(
                 groupby=groupby,
-                top_n=hyperparameter,
+                top_n=hyperparameter.get("top_n", None),
                 label_column=target_column,
                 pd_column=pd_score_column,
             )
