@@ -346,6 +346,10 @@ class MultipleObjective(BaseObjective):
             self.logger.info(f"Trial {trial.number} finished with result: {results}")
             self.logger.info(f"targets: {targets}")
             self.logger.info(f"weights: {weights}")
+            best_trials = self.study.best_trials
+            if len(best_trials) > 0:
+                best_trial = best_trials[len(best_trials)-1]
+                self.logger.info(f"Trial {trial.number} finished with value: {results} and parameters: {list(trial.params.values())} and targets: {targets}. Best is trial {best_trial.number} with value: {best_trial.values}")
         return results
 
     def export_completed_formulas(self, weights: Optional[np.ndarray] = None) -> None:

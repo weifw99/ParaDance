@@ -1,85 +1,66 @@
 import csv
 import pickle
 import sys
+from itertools import zip_longest
+
 from paradance.evaluation.calculator import Calculator
 from .multiple_objective import MultipleObjective
 
 
-def get_best_trials(multiple_objective: MultipleObjective) -> None:
+def convert_trials_log(multiple_objective: MultipleObjective) -> None:
     """
     Extracts and saves the best trials from the provided log content.
     """
     ob = multiple_objective
     file_path = f"{ob.full_path}/paradance.log"
-    output_path = f"{ob.full_path}/paradance_best_trials.csv"
+    output_path = f"{ob.full_path}/paradance_full_trials_info.csv"
 
     with open(file_path, "r") as file:
         lines = file.readlines()
 
-    best_trials = set()
     extracted_data = []
     sys.stdout.write(f"\nFormula:\t{ob.formula}\n")
     sys.stdout.write(f"Evaluators:\t{ob.evaluator_flags}\n")
     sys.stdout.write(f"Features:\t{ob.calculator.selected_columns}\n")
     for idx, line in enumerate(lines):
+        # 解析日志源数据
+        # Trial 0 finished with value: [0.843672536284416, 0.8657909813490523] and parameters: [23.987171796642915, 6.634986242117158] and targets: [0.843672536284416, 0.8663505926767384, 0.806573261754342, 0.6387309293607156, 0.03843802862950801, 0.03577642453240539, 0.720284480273136, 0.7222572611202347, 0.6632637592066641, 0.7940226951110784, 0.5401175080825665, 0.8657909813490523, 0.8807738994702624, 0.8291146088872814, 0.21522094263607938, 0.0018108057697090276]. Best is trial 4 with value: [0.8476278141630739, 0.7931699227594781]
+
         if "Best is trial" in line:
-            trial_number = int(line.split("Best is trial")[1].split(" ")[1])
+            first_split = line.split('finished with value:')
+            trial_number = int(first_split[0].split(" ")[1].strip())
 
-            if trial_number in best_trials:
-                continue
+            sec_split = first_split[1].split("and parameters:")
+            results_line = sec_split[0].strip()
+            th_split = sec_split[1].split('and targets:')
+            weights_line = th_split[0].strip()
 
-            best_trials.add(trial_number)
+            targets_line = th_split[1].split('. Best is trial ')[0].strip()
 
-            for sub_idx in range(idx, -1, -1):
-                if f"Trial {trial_number} finished with result:" in lines[sub_idx]:
-                    results_line = lines[sub_idx]
-                    sub_idx += 1
+            import json
+            targets = json.loads(targets_line)
+            weights = json.loads(weights_line)
 
-                    while "targets:" not in lines[sub_idx]:
-                        sub_idx += 1
-                    targets_line = (
-                        lines[sub_idx].split("targets:")[1].strip().strip("[]")
-                    )
+            results = json.loads(results_line)
 
-                    while "weights:" not in lines[sub_idx]:
-                        sub_idx += 1
-                    weights_line = (
-                        lines[sub_idx].split("weights:")[1].strip().strip("[]")
-                    )
-
-                    results = results_line.split("result:")[1].strip()
-                    targets_str = [
-                        val.strip() for val in targets_line.split(",") if val.strip()
-                    ]
-                    weights_str = [
-                        val.strip() for val in weights_line.split(",") if val.strip()
-                    ]
-
-                    try:
-                        targets = [float(val) for val in targets_str]
-                        weights = [float(val) for val in weights_str]
-                        sys.stdout.write(f"\ntrail {trial_number}:\t{results}\n")
-                        sys.stdout.write(f"sub-target:\t{targets}\n")
-                        sys.stdout.write(f"parameters:\t{weights}\n")
-                        extracted_data.append((results, trial_number, targets, weights))
-                    except ValueError as e:
-                        sys.stdout.write(
-                            f"Error processing line: {sub_idx}, error: {e}\n"
-                        )
-                    break
+            extracted_data.append((results, trial_number, targets, weights))
 
     with open(output_path, "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(
-            [
-                f"{ob.formula}",
-                "Trial",
-                f"{ob.evaluator_flags}",
-                f"{ob.calculator.selected_columns}",
-            ]
-        )
-        for data in extracted_data:
-            writer.writerow([data[0], data[1], str(data[2]), str(data[3])])
+        evaluator_flags = []
+        for (target_column, flag, groupby, hyperparameter, ) in zip_longest( ob.target_columns, ob.evaluator_flags, ob.groupbys, ob.hyperparameters, fillvalue=None):
+            evaluator_flags.append(f'{target_column}_{flag}_{groupby}_{hyperparameter}')
+
+        header = ["Trial",] + ob.formula + evaluator_flags + [f'w_{s_c}' for s_c in ob.calculator.selected_columns]
+        writer.writerow(header)
+
+        extracted_data = sorted(extracted_data, key=lambda x: x[1])
+        for (results, trial_number, targets, weights) in extracted_data:
+            rows = [trial_number]
+            rows += results
+            rows += targets
+            rows += weights
+            writer.writerow(rows)
 
 
 def save_multiple_objective_info(ob: MultipleObjective, filename: str) -> None:
@@ -133,4 +114,4 @@ def save_study(multiple_objective: MultipleObjective) -> None:
     ob.study.trials_dataframe().to_csv(f"{ob.full_path}/paradance_full_trials.csv")
     with open(f"{ob.full_path}/study.pkl", "wb") as f:
         pickle.dump(ob.study, f)
-    get_best_trials(ob)
+    convert_trials_log(ob)

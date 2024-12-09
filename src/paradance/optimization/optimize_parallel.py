@@ -3,6 +3,7 @@ import subprocess
 import sys
 import threading
 import time
+from itertools import zip_longest
 from typing import Union
 
 import numpy as np
@@ -11,6 +12,7 @@ from joblib import Parallel, delayed
 from .get_processors import get_logical_processors_count
 from .multiple_objective import MultipleObjective
 from .save_study import save_study
+from ..utils.calculator_util import sort_dict_values_by_key
 
 
 def parallel_optimize(
@@ -76,6 +78,9 @@ def get_best_trials(
                             )
 
                             results = results_line.split("result:")[1].strip()
+                            import json
+                            results = json.loads(results)
+
                             targets_str = [
                                 val.strip()
                                 for val in targets_line.split(",")
@@ -100,18 +105,26 @@ def get_best_trials(
 
                     with open(output_path, "w", newline="") as csvfile:
                         writer = csv.writer(csvfile)
-                        writer.writerow(
-                            [
-                                f"{ob.formula}",
-                                "Trial",
-                                f"{ob.evaluator_flags}",
-                                f"{ob.calculator.selected_columns}",
-                            ]
-                        )
-                        for data in extracted_data:
-                            writer.writerow(
-                                [data[0], data[1], str(data[2]), str(data[3])]
-                            )
+                        evaluator_flags = []
+                        for (target_column, flag, groupby, hyperparameter,) in zip_longest(ob.target_columns,
+                                                                                           ob.evaluator_flags,
+                                                                                           ob.groupbys,
+                                                                                           ob.hyperparameters,
+                                                                                           fillvalue=None):
+                            evaluator_flags.append(f'{target_column}_{flag}_{groupby}_{hyperparameter}')
+
+                        header = ["Trial", ] + ob.formula + evaluator_flags + [f'w_{s_c}' for s_c in
+                                                                               ob.calculator.selected_columns]
+                        writer.writerow(header)
+
+                        for (results, trial_number, targets, weights) in extracted_data:
+                            rows = [trial_number]
+                            rows += results
+                            rows += targets
+                            rows += weights
+                            writer.writerow(rows)
+                            # writer.writerow([trial_number, results, str(targets), str(weights)])
+
         except FileNotFoundError:
             pass
         time.sleep(refresh_rate)
@@ -153,7 +166,7 @@ def optimize_run(
             delayed(parallel_optimize)(ob, i, unit_n_trials) for i in range(n_cores)
         )
 
-    ob.best_params = np.asarray( ob.study.best_trials[len(ob.study.best_trials) - 1].values )
+    ob.best_params = np.asarray( sort_dict_values_by_key(ob.study.best_trials[len(ob.study.best_trials) - 1].params) )
     save_study(ob)
     if not ob.save_study:
         subprocess.run(["rm", "-rf", ob.full_path])
