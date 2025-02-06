@@ -102,14 +102,24 @@ def evaluate_targets(
             )
             targets.append(top_n_coverage)
 
+        elif flag == "top_n_num":
+            top_n_num = calculator.calculate_top_n_num(
+                target_column=target_column,
+                mask_column=mask_column,
+                groupby=groupby,
+                top_n=hyperparameter.get("top_n", None),
+                pd_column=pd_score_column,
+            )
+            targets.append(top_n_num)
+
         elif flag == "ndcg_top_n":
-            top_n_coverage = calculator.calculate_ndcg(
+            top_n_ndcg = calculator.calculate_ndcg(
                 groupby=groupby,
                 top_n=hyperparameter.get("top_n", None),
                 label_column=target_column,
                 pd_column=pd_score_column,
             )
-            targets.append(top_n_coverage)
+            targets.append(top_n_ndcg)
 
         elif flag == "distinct_top_coverage":
             distinct_top_coverage = calculator.calculate_distinct_top_coverage(

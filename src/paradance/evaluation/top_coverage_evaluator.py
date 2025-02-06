@@ -126,6 +126,7 @@ def calculate_top_n_coverage(
     """
     if top_n is None:
         top_n = 100
+    # print(f'{"*"*10}calculate_top_n_coverage: ', top_n)
 
     df = calculator.evaluated_dataframe
     # total_sum = df[target_column].sum()
@@ -133,5 +134,41 @@ def calculate_top_n_coverage(
     top_sum = group_top_df[target_column].sum()
     # top_coverage_ratio = top_sum / total_sum
     top_coverage_ratio = top_sum / group_top_df[target_column].count()
+
+    return float(top_coverage_ratio)
+
+
+
+
+@evaluation_preprocessor
+def calculate_top_n_num(
+    calculator: "Calculator",
+    target_column: str,
+    mask_column: Optional[str] = None,
+    groupby: Optional[str] = None,
+    top_n: Optional[int] = None,
+    pd_column='overall_score',
+) -> float:
+    """Calculates the top coverage ratio of a specified column in a DataFrame.
+
+    Args:
+        calculator (Calculator): An object that provides access to the evaluated DataFrame.
+        target_column (str): The name of the column to calculate the coverage for.
+        mask_column (Optional[str], optional): The name of the column to apply a mask on. Defaults to None.
+        top_n (Optional[int], optional): The percentage of the top rows to consider. Defaults to 100.
+
+    Returns:
+        float: The ratio of the sum of the top `top_n` rows to the total sum of the `target_column`.
+    """
+    if top_n is None:
+        top_n = 100
+
+    df = calculator.evaluated_dataframe
+    # total_sum = df[target_column].sum()
+    group_top_df = pd_data_group_top_n(data=df, group_cols=[groupby], val_cols=[pd_column], ascending=False, k=top_n)
+    top_sum = group_top_df[target_column].sum()
+    # top_coverage_ratio = top_sum / total_sum
+    # top_coverage_ratio = top_sum / group_top_df[target_column].count()
+    top_coverage_ratio = top_sum / len(group_top_df[groupby].unique())
 
     return float(top_coverage_ratio)

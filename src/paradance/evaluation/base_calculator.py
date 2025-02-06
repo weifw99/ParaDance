@@ -23,6 +23,7 @@ from .top_coverage_evaluator import (
     calculate_distinct_top_coverage,
     calculate_top_coverage,
     calculate_top_n_coverage,
+    calculate_top_n_num,
 )
 from .woauc_evaluator import calculate_woauc
 from .wuauc_evaluator import calculate_wuauc
@@ -56,6 +57,7 @@ class BaseCalculator(metaclass=ABCMeta):
     calculate_tau = partialmethod(calculate_tau)
     calculate_top_coverage = partialmethod(calculate_top_coverage)
     calculate_top_n_coverage = partialmethod(calculate_top_n_coverage)
+    calculate_top_n_num = partialmethod(calculate_top_n_num)
     calculate_woauc = partialmethod(calculate_woauc)
     calculate_wuauc = partialmethod(calculate_wuauc)
 
